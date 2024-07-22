@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sinais do Ród</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: black;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid white;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            font-weight: bold;
+        }
+        .date-filter {
+            max-width: 130px; /* Ajuste o tamanho conforme necessário */
+        }
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+            border-radius: 15px;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+            border-color: #0056b3;
+        }
+        .form-row {
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .form-group {
+            margin-bottom: 0;
+        }
+        .btn-filter {
+            margin-left: 10px;
+        }
+        .filters-container {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            margin-bottom: 20px;
+        }
+        .form-group + .form-group {
+            margin-left: 10px; /* Espaço entre as caixas de data */
+        }
+        h1 {
+            font-size: 1.5rem; /* Diminuir o tamanho do título */
+            font-weight: bold; /* Colocar o título em negrito */
+        }
+    </style>
+</head>
+<body>
+    <div class="container my-5">
+        <h1 class="text-center mb-4">Resultados da Sala M1 (Gale 1)</h1>
+        <div class="filters-container">
+            <div class="form-group">
+                <label for="startDate" class="sr-only">Data Inicial:</label>
+                <input type="date" id="startDate" class="form-control date-filter rounded">
+            </div>
+            <div class="form-group">
+                <label for="endDate" class="sr-only">Data Final:</label>
+                <input type="date" id="endDate" class="form-control date-filter rounded">
+            </div>
+            <button class="btn btn-primary btn-filter" onclick="filterData()">Filtrar</button>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-dark table-striped table-bordered rounded">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Horário de Início</th>
+                        <th>Horário Final</th>
+                        <th>Wins</th>
+                        <th>Wins G1</th>
+                        <th>Total de Wins</th>
+                        <th>Loss</th>
+                        <th>Total de Sinais</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <!-- Dados serão inseridos aqui -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        async function loadData() {
+            try {
+                const response = await fetch('dados.txt');
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                const text = await response.text();
+                console.log('Arquivo TXT carregado com sucesso:', text);
+                return text.trim().split('\n').map(line => line.split(';'));
+            } catch (error) {
+                console.error('Erro ao carregar o arquivo:', error);
+                return [];
+            }
+        }
+
+        function formatDateString(dateString) {
+            // Converter "2024.07.21" para "2024-07-21"
+            return dateString.replace(/\./g, '-');
+        }
+
+        function displayDate(dateString) {
+            // Converter "2024-07-21" para "21/07/2024"
+            const [year, month, day] = dateString.split('-');
+            return `${day}/${month}/${year}`;
+        }
+
+        function filterData() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            console.log('Datas selecionadas:', { startDate, endDate });
+            loadData().then(data => {
+                const filteredData = data.filter(row => {
+                    const date = formatDateString(row[0]);
+                    return (!startDate || date >= startDate) && (!endDate || date <= endDate);
+                });
+                console.log('Dados filtrados:', filteredData);
+                displayData(filteredData);
+            });
+        }
+
+        function displayData(data) {
+            const tableBody = document.getElementById('tableBody');
+            tableBody.innerHTML = '';
+            if (data.length === 0) {
+                const tr = document.createElement('tr');
+                const td = document.createElement('td');
+                td.textContent = 'Nenhum dado encontrado';
+                td.colSpan = 8;
+                tr.appendChild(td);
+                tableBody.appendChild(tr);
+            } else {
+                data.forEach(row => {
+                    const tr = document.createElement('tr');
+                    row.forEach((cell, index) => {
+                        const td = document.createElement('td');
+                        td.textContent = index === 0 ? displayDate(formatDateString(cell)) : cell;
+                        tr.appendChild(td);
+                    });
+                    tableBody.appendChild(tr);
+                });
+            }
+        }
+
+        function setInitialDates() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('startDate').value = today;
+            document.getElementById('endDate').value = today;
+        }
+
+        // Carrega todos os dados ao iniciar a página
+        window.onload = () => {
+            setInitialDates();
+            filterData();
+        };
+    </script>
+</body>
+</html>
